@@ -130,6 +130,8 @@ passRoleId = "1257065526019231945"
 [gemini]
 enabled = false
 apiKey = ""
+# Google Search grounding for Gemini 3.5 Flash requires a paid project.
+googleSearch = false
 allowedRoles = [
     "1026509424686284924", # mod
     "1042507929485586532", # donor

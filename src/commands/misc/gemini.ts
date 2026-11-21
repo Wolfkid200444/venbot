@@ -1,4 +1,4 @@
-import { ApiError, ContentListUnion, createModelContent, createPartFromUri, createUserContent, GenerateContentParameters, GoogleGenAI, HarmBlockThreshold, HarmCategory } from "@google/genai";
+import { ApiError, ContentListUnion, createModelContent, createPartFromUri, createUserContent, GenerateContentParameters, GoogleGenAI, HarmBlockThreshold, HarmCategory, ThinkingLevel } from "@google/genai";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Collection, Message } from "oceanic.js";
@@ -14,9 +14,9 @@ import { sleep, until } from "~/util/time";
 import { Vaius } from "~/Vaius";
 import { fetchFaq } from "../support/faq";
 
-const { apiKey, enabled, allowedRoles, bannedRoles } = Config.gemini;
+const { apiKey, enabled, googleSearch, allowedRoles, bannedRoles } = Config.gemini;
 
-const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+const models = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
 const youtubeVideoRegex = /((?:https?:)\/\/)((?:www|m)\.)?((?:youtube(?:-nocookie)?\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|live\/|v\/)?)([\w\-]+)(\S+)?/g;
 
 const supportedMimeTypes = new Set([
@@ -60,17 +60,19 @@ export const ai = new GoogleGenAI({
 const getSystemPrompt = makeLazy(() => readFile(join(ASSET_DIR, "gemini-system-prompt.txt"), "utf-8"));
 
 export async function generateContent(params: Omit<GenerateContentParameters, "model">, model = models[0]) {
+    const isGemini = models.includes(model);
+
     try {
         const response = await ai.models.generateContent({
             ...params,
             config: {
                 ...params.config,
-                // Gemma no no support google search
-                tools: params.config!.tools ??
-                    (models.includes(model)
-                        ? [{ googleSearch: {} }]
-                        : []
-                    ),
+                tools: params.config?.tools ?? (isGemini && googleSearch ? [{ googleSearch: {} }] : undefined),
+                thinkingConfig: params.config?.thinkingConfig ?? (isGemini
+                    ? model === "gemini-3.5-flash"
+                        ? { thinkingLevel: ThinkingLevel.MINIMAL }
+                        : { thinkingBudget: -1 }
+                    : undefined),
                 safetySettings: [
                     HarmCategory.HARM_CATEGORY_HATE_SPEECH,
                     HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
@@ -89,7 +91,7 @@ export async function generateContent(params: Omit<GenerateContentParameters, "m
         // Fallback to next model if rate limited or overloaded
         if (e instanceof ApiError && (e.status === 429 || e.status === 503)) {
             const modelIndex = models.indexOf(model);
-            const nextModel = models[modelIndex + 1];
+            const nextModel = modelIndex >= 0 ? models[modelIndex + 1] : undefined;
             if (nextModel) {
                 return generateContent(params, nextModel);
             }
@@ -224,10 +226,7 @@ defineCommand({
             config: {
                 maxOutputTokens: 4000,
                 ...(!useGemma && {
-                    systemInstruction: systemPrompt,
-                    thinkingConfig: {
-                        thinkingBudget: -1
-                    }
+                    systemInstruction: systemPrompt
                 })
             }
         }, modelOverride);

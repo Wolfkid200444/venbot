@@ -67,6 +67,7 @@ const ConfigSchema = pipe(
 
         gemini: enabledConfig({
             apiKey: optionalString(),
+            googleSearch: optional(boolean(), false),
             allowedRoles: optional(array(string()), []),
             bannedRoles: optional(array(string()), [])
         }),
