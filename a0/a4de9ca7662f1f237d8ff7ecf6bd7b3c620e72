@@ -1,0 +1,23 @@
+src/commands/misc/gemini.ts
+  s_48654af82958a9::t_f7ed2eca548d39 1,17,19,63-64,70-75,94,229
+assets/examples/config.example.toml
+  s_48654af82958a9::t_f7ed2eca548d39 133-134
+src/config.ts
+  s_48654af82958a9::t_f7ed2eca548d39 70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a0a4de9ca7662f1f237d8ff7ecf6bd7b3c620e72",
+  "prompts": {},
+  "sessions": {
+    "s_48654af82958a9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fb7c-09d6-7a13-8acc-bc3f9a02efca",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Wolfkid200444 <32025746+Wolfkid200444@users.noreply.github.com>"
+    }
+  }
+}
